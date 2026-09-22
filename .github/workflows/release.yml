@@ -10,11 +10,19 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # release-please's token defaults to github.token, which needs both of these: contents
+    # to push the release branch and cut the tag, pull-requests to groom the release PR.
+    #
+    # No PAT and no app token. The one thing github.token cannot do is trigger workflows
+    # from the PR it opens, so the release PR gets no `test` run — and it only ever edits
+    # version and changelog lines whose commits already passed on master. If this repo
+    # ever requires `test` to merge, that PR becomes unmergeable and an app token is the
+    # fix, not a personal one.
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      # RELEASE_TOKEN rather than github.token: the consumers pin this package by tag, and
-      # a tag pushed with the default token fires no workflow_run anywhere downstream
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
-          token: ${{ secrets.RELEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
