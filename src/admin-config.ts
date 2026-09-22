@@ -70,10 +70,13 @@ export function adminConfigYaml(site: SiteCopy): string {
     .join('\n')
 }
 
+// lang lands inside an attribute, so the quotes matter as much as the brackets
 const escapeHtml = (value: string): string =>
   value.replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 
 // Generated rather than shipped static, because the title and the language are the
 // client's and the script names are the package's — and plain HTML can template neither.

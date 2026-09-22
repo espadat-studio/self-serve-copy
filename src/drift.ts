@@ -1,4 +1,4 @@
-import { hasPath, readPath } from './merge'
+import { hasPath, readPath } from './path-address'
 import type { EditableField, SiteCopy } from './site'
 
 type Drift = NonNullable<SiteCopy['drift']>
@@ -79,7 +79,7 @@ export function renderDriftReport(
   const drifted = fields.filter((field) => stale.includes(field.name))
 
   return [
-    `The base copy of these keys has moved since ${locales} were written against it, so those ${drift.locales.length} now say the old thing:`,
+    `The base copy of these keys has moved since ${locales} were written against it, so those now say the old thing:`,
     '',
     ...drifted.map((field) => `- \`${field.name}\` — ${field.label}`),
     '',

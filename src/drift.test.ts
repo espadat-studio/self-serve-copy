@@ -89,10 +89,11 @@ describe('the drift report', () => {
     expect(renderDriftReport(FIELDS, ['seo_title'], DRIFT)).toContain('`mise r translation-baseline -- <key>`')
   })
 
-  test('counts the locales it is reporting on', () => {
+  test('names whatever locales the site declares, however many', () => {
     const two = { ...DRIFT, locales: ['en', 'fr'] }
-    expect(renderDriftReport(FIELDS, ['seo_title'], two)).toContain('so those 2 now say the old thing')
     expect(renderDriftReport(FIELDS, ['seo_title'], two)).toContain('`en` and `fr`')
+    const one = { ...DRIFT, locales: ['fr'] }
+    expect(renderDriftReport(FIELDS, ['seo_title'], one)).toContain('since `fr` were written')
   })
 
   test('says nothing that could fail a build, since it is written to an issue', () => {

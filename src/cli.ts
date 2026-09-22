@@ -42,29 +42,40 @@ async function loadSite(): Promise<SiteCopy> {
   return loaded.default
 }
 
-// the caller's steps gate on these; everything else it needs it already knows
-function report(outputs: Record<string, string>): void {
+// The caller's later steps gate on these. Outside Actions there is nowhere to write
+// them and nothing reads them, so a missing GITHUB_OUTPUT is a local run, not a fault.
+function emitStepOutputs(outputs: Record<string, string>): void {
   const file = process.env.GITHUB_OUTPUT
   if (!file) return
   appendFileSync(file, `${Object.entries(outputs).map(([key, value]) => `${key}=${value}`).join('\n')}\n`)
 }
 
+const COMMANDS = ['fetch', 'merge', 'status', 'drift'] as const
+
+type Command = (typeof COMMANDS)[number]
+
+const isCommand = (value: string | undefined): value is Command =>
+  COMMANDS.includes(value as Command)
+
 async function main(): Promise<void> {
+  // checked before the site loads, so `self-serve-copy typo` says so rather than
+  // complaining about a --config it would not have used
+  if (!isCommand(command)) throw new Error(`unknown command ${command ?? ''}\n\n${USAGE}`)
+  const site = await loadSite()
+
   switch (command) {
     case 'fetch': {
-      const site = await loadSite()
       const outcome = await fetchCopy(site, token())
       if (!outcome.fetched) {
         console.log(outcome.reason)
         return
       }
       writeFileSync(required(values.out, '--out'), outcome.content)
-      report({ fetched: 'true', sha: outcome.sha })
+      emitStepOutputs({ fetched: 'true', sha: outcome.sha })
       return
     }
 
     case 'merge': {
-      const site = await loadSite()
       const incoming = required(rest[0], 'the incoming file')
       const { merged, dropped } = mergeFenced(
         site.fields,
@@ -77,13 +88,11 @@ async function main(): Promise<void> {
     }
 
     case 'status': {
-      const site = await loadSite()
       await postStatus(site, token(), required(values.sha, '--sha'))
       return
     }
 
     case 'drift': {
-      const site = await loadSite()
       if (!site.drift) throw new Error('this site declares no drift baseline, so it has no locales to report on')
       const stale = detectDrift(
         site.fields,
@@ -95,9 +104,6 @@ async function main(): Promise<void> {
       console.log(stale.length)
       return
     }
-
-    default:
-      throw new Error(`unknown command ${command ?? ''}\n\n${USAGE}`)
   }
 }
 

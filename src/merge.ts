@@ -1,43 +1,9 @@
+import { hasPath, type Holder, writePath } from './path-address'
 import type { EditableField } from './site'
 
 export type FencedMerge = {
   merged: string
   dropped: string[]
-}
-
-type Holder = Record<string, unknown> | unknown[]
-
-const isHolder = (value: unknown): value is Holder => typeof value === 'object' && value !== null
-
-// Walks every segment but the last. An absent intermediate returns nothing rather than
-// a path to create: the client edits words, never shape.
-function holderOf(root: Holder, path: string): { holder: Holder; leaf: string } | undefined {
-  const parts = path.split('.')
-  const leaf = parts.pop() as string
-  let holder: unknown = root
-
-  for (const part of parts) {
-    if (!isHolder(holder) || !(part in holder)) return undefined
-    holder = (holder as Record<string, unknown>)[part]
-  }
-
-  return isHolder(holder) ? { holder, leaf } : undefined
-}
-
-export function readPath(root: Holder, path: string): unknown {
-  const found = holderOf(root, path)
-  return found && found.leaf in found.holder ? (found.holder as Record<string, unknown>)[found.leaf] : undefined
-}
-
-export function hasPath(root: Holder, path: string): boolean {
-  const found = holderOf(root, path)
-  return found !== undefined && found.leaf in found.holder
-}
-
-function writePath(root: Holder, path: string, value: string): void {
-  const found = holderOf(root, path)
-  if (!found) throw new Error(`the target file has no path ${path}`)
-  ;(found.holder as Record<string, unknown>)[found.leaf] = value
 }
 
 // the client's own commit is the last gate before master, so a value that would red the
@@ -70,6 +36,8 @@ export function mergeFenced(
   const fence = new Set(fields.map((field) => field.name))
   const dropped = Object.keys(incoming).filter((key) => !fence.has(key))
 
+  // structuredClone rather than a hand-rolled copy: it preserves insertion order at every
+  // depth, which is what keeps an unchanged target byte for byte identical
   const merged = structuredClone(current)
   for (const field of fields) {
     if (!(field.name in incoming)) continue

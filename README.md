@@ -20,7 +20,7 @@ No build step. `exports` point at raw TypeScript, compiled by the consumer.
 | Admin shell, preview renderer, styles, section grouping | The field list — the fence, by construction |
 | `EditableField`, the config generator, the path-aware merge | Backend values: content repo, OAuth client id, panel locale, site URL, media folder |
 | The drift detector | The target file, and whether the drift command runs at all |
-| The bridge: forge fetch, encoding and status checks, retry semantics, status payloads | A workflow of roughly 30 lines: schedule, concurrency, permissions, checkout, app token, push |
+| The bridge: forge fetch, encoding and status checks, retry semantics, status payloads | A thin workflow: schedule, concurrency, permissions, checkout, app token, push |
 
 The fence is the boundary, not the mechanism. Nothing about one site's editable-key list generalises to another, so it never lives here.
 

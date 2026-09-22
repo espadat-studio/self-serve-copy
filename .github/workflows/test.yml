@@ -28,4 +28,6 @@ jobs:
       # node_modules, and one test asserts that resolution still lands on a file
       - run: bun install
 
+      - run: bun run typecheck
+
       - run: bun test
