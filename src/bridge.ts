@@ -1,6 +1,8 @@
 import { contentFileOf, forgeApiOf, type SiteCopy } from './site'
 
-export type Fetcher = typeof fetch
+// the call signature rather than `typeof fetch`, which under Bun's types also carries a
+// `preconnect` property this never calls and no stub should have to supply
+export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>
 
 export type FetchOutcome =
   | { fetched: true; sha: string; content: string }
@@ -22,6 +24,11 @@ export async function fetchCopy(site: SiteCopy, token: string, doFetch: Fetcher 
   try {
     response = await doFetch(url, {
       headers: { Authorization: `token ${token}` },
+      // manual, not the default follow: a redirect is a misconfiguration and has to reach
+      // the check below as its own status. Followed, a cross-origin hop strips the
+      // Authorization header and the run either 401s or merges somebody else's bytes.
+      // `error` would throw instead, and the catch above reads a throw as a retry.
+      redirect: 'manual',
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
   } catch {
@@ -54,9 +61,16 @@ export async function fetchCopy(site: SiteCopy, token: string, doFetch: Fetcher 
   }
 }
 
+export type ForgeStatus = {
+  state: 'pending'
+  context: string
+  description: string
+  target_url: string
+}
+
 // pending, and never failure. A red mark on his own commit is something the client cannot
 // act on; a failure leaves this pending and tells the developer another way.
-export const pendingStatus = (site: SiteCopy) => ({
+export const pendingStatus = (site: SiteCopy): ForgeStatus => ({
   state: 'pending',
   context: site.statusContext,
   description: site.statusDescription,

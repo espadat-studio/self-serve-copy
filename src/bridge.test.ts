@@ -1,16 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { fetchCopy, pendingStatus, postStatus } from './bridge'
-import type { SiteCopy } from './site'
-
-const SITE = {
-  forge: 'https://git.example.xyz',
-  contentRepo: 'owner/content',
-  contentBranch: 'master',
-  contentFileName: 'es',
-  siteUrl: 'https://example.com',
-  statusContext: 'deploy/example.com',
-  statusDescription: 'Publicando el cambio.',
-} as SiteCopy
+import { EXAMPLE_SITE as SITE } from './site.fixture'
 
 const answers = (status: number, body: unknown) => () =>
   Promise.resolve(new Response(JSON.stringify(body), { status }))
@@ -29,21 +19,21 @@ describe('the forge fetch', () => {
   })
 
   test('asks the contents endpoint, which is the only one carrying that commit', async () => {
-    let asked = ''
+    const asked: string[] = []
     await fetchCopy(SITE, 'token', (url) => {
-      asked = String(url)
+      asked.push(url)
       return Promise.resolve(new Response(JSON.stringify(contents())))
     })
-    expect(asked).toBe('https://git.example.xyz/api/v1/repos/owner/content/contents/es.json?ref=master')
+    expect(asked).toEqual(['https://git.example.xyz/api/v1/repos/owner/content/contents/es.json?ref=master'])
   })
 
   test('sends the token the forge authenticates by', async () => {
-    let sent: string | null = null
+    const sent: (string | null)[] = []
     await fetchCopy(SITE, 'secret', (_url, init) => {
-      sent = new Headers(init?.headers).get('Authorization')
+      sent.push(new Headers(init?.headers).get('Authorization'))
       return Promise.resolve(new Response(JSON.stringify(contents())))
     })
-    expect(sent).toBe('token secret')
+    expect(sent).toEqual(['token secret'])
   })
 
   // the poll is the retry: nothing is lost, and nothing is loud
@@ -61,6 +51,17 @@ describe('the forge fetch', () => {
   // retrying fixes one quietly
   test.each([301, 401, 403, 404])('fails loudly on %i', async (status) => {
     expect(fetchCopy(SITE, 'token', answers(status, {}))).rejects.toThrow(String(status))
+  })
+
+  // following one would strip the Authorization header on a cross-origin hop, and the run
+  // would either 401 or merge somebody else's bytes under the client's name
+  test('refuses to follow a redirect', async () => {
+    const modes: (RequestRedirect | undefined)[] = []
+    await fetchCopy(SITE, 'token', (_url, init) => {
+      modes.push(init?.redirect)
+      return Promise.resolve(new Response(JSON.stringify(contents())))
+    })
+    expect(modes).toEqual(['manual'])
   })
 
   test('fails loudly when the forge sends something other than base64', async () => {
@@ -87,12 +88,12 @@ describe('the status it posts', () => {
   })
 
   test('lands on the client commit rather than the branch', async () => {
-    let asked = ''
+    const asked: string[] = []
     await postStatus(SITE, 'token', 'cafe1234', (url) => {
-      asked = String(url)
+      asked.push(url)
       return Promise.resolve(new Response('', { status: 201 }))
     })
-    expect(asked).toBe('https://git.example.xyz/api/v1/repos/owner/content/statuses/cafe1234')
+    expect(asked).toEqual(['https://git.example.xyz/api/v1/repos/owner/content/statuses/cafe1234'])
   })
 
   test('fails loudly when the forge refuses it', async () => {

@@ -1,6 +1,6 @@
 {
   "name": "@espadat/self-serve-copy",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "The site-agnostic half of the self-serve copy path: a Decap admin shell, a path-aware fenced merge, and the forge bridge as a CLI.",
   "type": "module",
   "private": true,
@@ -24,9 +24,14 @@
     }
   },
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "decap-cms": "3.16.2"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.0",
+    "typescript": "^5.9.0"
   }
 }

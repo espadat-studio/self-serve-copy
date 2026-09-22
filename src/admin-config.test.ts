@@ -8,32 +8,7 @@ import {
   DECAP_SCRIPT,
   decapDistPath,
 } from './admin-config'
-import type { SiteCopy } from './site'
-
-const SITE: SiteCopy = {
-  title: 'Textos de la web · Example',
-  lang: 'es',
-  forge: 'https://git.example.xyz',
-  contentRepo: 'owner/content',
-  contentBranch: 'master',
-  contentFileName: 'es',
-  oauthAppId: 'f510ab8a-3682-4bd5-9be1-949c7fdbb4c5',
-  panelLocale: 'es',
-  siteUrl: 'https://example.com',
-  mediaFolder: 'img',
-  collectionName: 'textos',
-  collectionLabel: 'Textos de la web',
-  collectionDescription: 'Al publicar, el cambio tarda unos diez minutos.',
-  fileLabel: 'Textos en español',
-  targetFile: 'messages/es.json',
-  statusContext: 'deploy/example.com',
-  statusDescription: 'Publicando el cambio.',
-  fields: [
-    { name: 'seo_title', label: 'Buscadores · Título', widget: 'string' },
-    { name: 'about_body_1', label: 'Sobre mí · Primero', widget: 'text', pattern: ['.*\\{years\\}.*', 'Deja {years}'] },
-    { name: 'hero_image_alt', label: 'Portada · Foto', widget: 'string', hint: 'La leen los buscadores.' },
-  ],
-}
+import { EXAMPLE_SITE as SITE } from './site.fixture'
 
 const config = adminConfigYaml(SITE)
 
@@ -111,12 +86,18 @@ describe('the admin shell', () => {
   test('escapes a title that would otherwise close the tag', () => {
     expect(adminShellHtml({ ...SITE, title: 'A <b> & B' })).toContain('<title>A &lt;b&gt; &amp; B</title>')
   })
+
+  test('escapes a value that would otherwise break out of its attribute', () => {
+    expect(adminShellHtml({ ...SITE, lang: 'es" onload="x' })).toContain('<html lang="es&quot; onload=&quot;x">')
+  })
 })
 
 describe('the files the build copies', () => {
-  test.each(ADMIN_ASSETS)('ships %s beside the shell', (name) => {
-    expect(existsSync(adminAssetPath(name))).toBe(true)
-  })
+  for (const name of ADMIN_ASSETS) {
+    test(`ships ${name} beside the shell`, () => {
+      expect(existsSync(adminAssetPath(name))).toBe(true)
+    })
+  }
 
   test('resolves the Decap bundle from the version this package pins', () => {
     expect(existsSync(decapDistPath())).toBe(true)
