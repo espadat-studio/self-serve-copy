@@ -1,0 +1,47 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap");
+
+body {
+  margin: 0;
+  background: #efede8;
+  color: #1c1b17;
+  font-family: "Manrope", sans-serif;
+}
+
+.section {
+  padding: 2rem 1.5rem;
+  border-bottom: 1px solid rgba(28, 27, 23, 0.08);
+}
+
+.section:nth-of-type(even) {
+  background: #faf8f4;
+}
+
+.section h2 {
+  margin: 0 0 1rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #5a6350;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field {
+  margin: 0 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.field-label {
+  font-size: 0.7rem;
+  color: #6e6a60;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.field-value {
+  font-size: 1rem;
+  color: #1c1b17;
+  white-space: pre-wrap;
+}

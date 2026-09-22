@@ -1,0 +1,29 @@
+{
+  "name": "@espadat/self-serve-copy",
+  "version": "0.1.0",
+  "description": "The site-agnostic half of the self-serve copy path: a Decap admin shell, a path-aware fenced merge, and the forge bridge as a CLI.",
+  "type": "module",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/espadat-studio/self-serve-copy.git"
+  },
+  "bin": {
+    "self-serve-copy": "./src/cli.ts"
+  },
+  "exports": {
+    "./site": "./src/site.ts",
+    "./merge": "./src/merge.ts",
+    "./admin-config": "./src/admin-config.ts",
+    "./drift": "./src/drift.ts",
+    "./bridge": "./src/bridge.ts",
+    "./section-grouping": "./admin/section-grouping.js"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "decap-cms": "3.16.2"
+  }
+}
