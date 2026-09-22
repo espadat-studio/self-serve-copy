@@ -1,6 +1,6 @@
 {
   "name": "@espadat/self-serve-copy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The site-agnostic half of the self-serve copy path: a Decap admin shell, a path-aware fenced merge, and the forge bridge as a CLI.",
   "type": "module",
   "private": true,
@@ -18,7 +18,10 @@
     "./admin-config": "./src/admin-config.ts",
     "./drift": "./src/drift.ts",
     "./bridge": "./src/bridge.ts",
-    "./section-grouping": "./admin/section-grouping.js"
+    "./section-grouping": {
+      "types": "./admin/section-grouping.d.ts",
+      "default": "./admin/section-grouping.js"
+    }
   },
   "scripts": {
     "test": "bun test"
