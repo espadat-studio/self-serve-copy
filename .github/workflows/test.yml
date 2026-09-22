@@ -26,6 +26,6 @@ jobs:
 
       # decap-cms is a real dependency here: admin-config resolves its bundle out of
       # node_modules, and one test asserts that resolution still lands on a file
-      - run: bun install --frozen-lockfile=false
+      - run: bun install
 
       - run: bun test
