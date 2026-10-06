@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
+import { groupFieldsBySection } from '../admin/section-grouping.js'
 import { contentFileOf, type EditableField, type SiteCopy } from './site'
 
 export const ADMIN_CONFIG_FILE = 'config.yml'
@@ -43,6 +44,34 @@ function field(entry: EditableField, indent: string): string[] {
   return lines
 }
 
+type Section = { name: string; label: string; fields: EditableField[] }
+
+const slugOf = (section: string): string =>
+  section.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+// One collection per section rather than one file entry per section: a files collection
+// slugs a loaded entry by the first file entry whose path matches, so N entries over the
+// one content file all list as the first. A collection apiece keeps that lookup unique,
+// and every file entry keeps the site's name, which is what the preview registers under.
+// Decap saves the whole parsed file, so the keys a section does not declare pass through.
+function sectionsOf(site: SiteCopy): Section[] {
+  const byName = new Map(site.fields.map((entry) => [entry.name, entry]))
+  const sections = groupFieldsBySection(site.fields).map(({ section, fields }) => ({
+    name: slugOf(section),
+    label: section,
+    fields: fields.map(({ name }) => byName.get(name)!),
+  }))
+  if (sections.length === 1) return [{ ...sections[0]!, name: site.collectionName, label: site.collectionLabel }]
+
+  const seen = new Map<string, string>()
+  for (const { name, label } of sections) {
+    if (!name) throw new Error(`section has no letters or digits to name its collection by: ${label}`)
+    if (seen.has(name)) throw new Error(`sections ${seen.get(name)} and ${label} both name the collection ${name}`)
+    seen.set(name, label)
+  }
+  return sections
+}
+
 export function adminConfigYaml(site: SiteCopy): string {
   return [
     'backend:',
@@ -56,15 +85,17 @@ export function adminConfigYaml(site: SiteCopy): string {
     `site_url: ${scalar(site.siteUrl)}`,
     `media_folder: ${scalar(site.mediaFolder)}`,
     'collections:',
-    `  - name: ${scalar(site.collectionName)}`,
-    `    label: ${scalar(site.collectionLabel)}`,
-    `    description: ${scalar(site.collectionDescription)}`,
-    '    files:',
-    `      - name: ${scalar(site.contentFileName)}`,
-    `        label: ${scalar(site.fileLabel)}`,
-    `        file: ${scalar(contentFileOf(site))}`,
-    '        fields:',
-    ...site.fields.flatMap((entry) => field(entry, '          ')),
+    ...sectionsOf(site).flatMap((section) => [
+      `  - name: ${scalar(section.name)}`,
+      `    label: ${scalar(section.label)}`,
+      `    description: ${scalar(site.collectionDescription)}`,
+      '    files:',
+      `      - name: ${scalar(site.contentFileName)}`,
+      `        label: ${scalar(site.fileLabel)}`,
+      `        file: ${scalar(contentFileOf(site))}`,
+      '        fields:',
+      ...section.fields.flatMap((entry) => field(entry, '          ')),
+    ]),
     '',
   ]
     .join('\n')
