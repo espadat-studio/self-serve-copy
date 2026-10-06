@@ -25,6 +25,8 @@ export type SiteCopy = {
   panelLocale: string
   siteUrl: string
   mediaFolder: string
+  // Name and label the one collection when every field shares a section. With more, each
+  // section is a collection named by its label.
   collectionName: string
   collectionLabel: string
   collectionDescription: string

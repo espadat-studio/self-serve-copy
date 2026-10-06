@@ -67,6 +67,20 @@ A monolingual site omits `drift` and never calls the drift command. No flag, no 
 
 An absent intermediate is an error, never a path to create. Array positions are literal, so list contents are editable and list shape is not: the client edits words, never structure.
 
+## Sections are entries
+
+A label's prefix up to ` · ` names its section: `Portada · Titular` sits in `Portada`. Each section becomes its own entry in the panel, in the order its first label appears, all over the one content file. Fields with no prefix gather in `Otros`. A site whose fields share one section gets a single entry, named and labelled by `contentFileName` and `fileLabel`.
+
+An entry's name is its section slugged: `Sobre mí` becomes `sobre-mi`. Two sections that slug alike stop the build.
+
+## Sections are collections
+
+A label's prefix up to ` · ` names its section: `Portada · Titular` sits in `Portada`. Each section becomes its own collection in the panel, in the order its first label appears, each holding one entry over the same content file. Fields with no prefix gather in `Otros`. A site whose fields share one section gets a single collection, named and labelled by `collectionName` and `collectionLabel`.
+
+A collection's name is its section slugged: `Sobre mí` becomes `sobre-mi`. Two sections that slug alike stop the build.
+
+One collection per section, not one entry: Decap lists a files collection's entries by path, so entries sharing a file all show as the first.
+
 ## Building the panel
 
 ```ts

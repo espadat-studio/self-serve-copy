@@ -1,0 +1,35 @@
+backend:
+  name: gitea
+  base_url: https://git.example.xyz
+  api_root: https://git.example.xyz/api/v1
+  repo: owner/content
+  branch: master
+  app_id: f510ab8a-3682-4bd5-9be1-949c7fdbb4c5
+locale: es
+site_url: https://example.com
+media_folder: img
+collections:
+  - name: textos
+    label: Textos de la web
+    description: Al publicar, el cambio tarda unos diez minutos.
+    files:
+      - name: es
+        label: Textos en español
+        file: es.json
+        fields:
+          - name: seo_title
+            label: Portada · Título
+            widget: string
+            required: true
+          - name: about_body_1
+            label: Portada · Primero
+            widget: text
+            required: true
+            pattern:
+              - .*\{years\}.*
+              - Deja {years}
+          - name: hero_image_alt
+            label: Portada · Foto
+            widget: string
+            required: true
+            hint: La leen los buscadores.

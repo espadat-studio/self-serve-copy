@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, test } from 'bun:test'
 import {
   ADMIN_ASSETS,
@@ -8,14 +8,86 @@ import {
   DECAP_SCRIPT,
   decapDistPath,
 } from './admin-config'
+import type { EditableField } from './site'
 import { EXAMPLE_SITE as SITE } from './site.fixture'
 
 const config = adminConfigYaml(SITE)
 
+const collectionsIn = (yaml: string) =>
+  yaml.split(/^ {2}- name: /m).slice(1).map((block) => ({
+    name: block.slice(0, block.indexOf('\n')),
+    label: block.match(/^ {4}label: (.+)$/m)?.[1],
+    entries: [...block.matchAll(/^ {6}- name: (\S+)\n {8}label: .+\n {8}file: (\S+)$/gm)].map(([, name, file]) => ({ name, file })),
+    fields: [...block.matchAll(/^ {10}- name: (\S+)$/gm)].map(([, name]) => name),
+  }))
+
+const withLabels = (...labels: string[]): EditableField[] =>
+  labels.map((label, index) => ({ name: `key_${index}`, label, widget: 'string' }))
+
 describe('the CMS config', () => {
-  test('names the collection, the file and then every field, and nothing else', () => {
+  test('names each section, its file and then its fields, and nothing else', () => {
     const named = [...config.matchAll(/^ +- name: (\S+)$/gm)].map(([, name]) => name)
-    expect(named).toEqual(['textos', 'es', 'seo_title', 'about_body_1', 'hero_image_alt'])
+    expect(named).toEqual(['buscadores', 'es', 'seo_title', 'sobre-mi', 'es', 'about_body_1', 'portada', 'es', 'hero_image_alt'])
+  })
+
+  test('gives each section its own collection, in the order its first label appears', () => {
+    const fields = withLabels('Uno · a', 'Dos · b', 'Uno · c', 'Tres · d')
+    const collections = collectionsIn(adminConfigYaml({ ...SITE, fields }))
+    expect(collections.map(({ name, fields }) => [name, fields])).toEqual([
+      ['uno', ['key_0', 'key_2']],
+      ['dos', ['key_1']],
+      ['tres', ['key_3']],
+    ])
+  })
+
+  test('labels each collection with its section', () => {
+    expect(collectionsIn(config).map(({ label }) => label)).toEqual(['Buscadores', 'Sobre mí', 'Portada'])
+  })
+
+  // a files collection slugs a loaded entry by the first file entry on its path, so sections
+  // sharing one collection would all list as the first; one apiece keeps each reachable
+  test('holds one file entry per collection', () => {
+    expect(collectionsIn(config).map(({ entries }) => entries.length)).toEqual([1, 1, 1])
+  })
+
+  // one content file, so the bridge, fetch and merge see no difference; Decap keeps the keys
+  // an entry does not declare, so saving one section leaves the others as they were
+  test('points every entry at the one content file', () => {
+    expect(collectionsIn(config).flatMap(({ entries }) => entries.map(({ file }) => file))).toEqual(
+      ['es.json', 'es.json', 'es.json'],
+    )
+  })
+
+  // the preview resolves its template by the file entry's name, so one name serves them all
+  test('names every file entry as the site does, so the preview renders for each', () => {
+    expect(collectionsIn(config).flatMap(({ entries }) => entries.map(({ name }) => name))).toEqual(['es', 'es', 'es'])
+  })
+
+  test('gathers the fields with no section into one collection, where the first of them sits', () => {
+    const fields = withLabels('Uno · a', 'suelto', 'Dos · b', 'otro suelto')
+    const collections = collectionsIn(adminConfigYaml({ ...SITE, fields }))
+    expect(collections.map(({ name, fields }) => [name, fields])).toEqual([
+      ['uno', ['key_0']],
+      ['otros', ['key_1', 'key_3']],
+      ['dos', ['key_2']],
+    ])
+  })
+
+  test('refuses two sections whose names would collide, rather than merging them', () => {
+    expect(() => adminConfigYaml({ ...SITE, fields: withLabels('Sobre mí · a', 'Sobre mi · b') })).toThrow(
+      'sobre-mi',
+    )
+  })
+
+  test('refuses a section whose label leaves nothing to name its collection by', () => {
+    expect(() => adminConfigYaml({ ...SITE, fields: withLabels('Uno · a', '¿? · b') })).toThrow('¿?')
+  })
+
+  // a site with one section keeps its collection name, so its panel URLs are unchanged
+  test('keeps a single-section site exactly as it was', () => {
+    const fields = SITE.fields.map((entry) => ({ ...entry, label: `Portada · ${entry.label.split(' · ')[1]}` }))
+    const expected = readFileSync(new URL('one-section.fixture.yml', import.meta.url), 'utf8')
+    expect(adminConfigYaml({ ...SITE, fields })).toBe(expected)
   })
 
   test('renders every field as required, so no edit can empty a key', () => {
@@ -51,7 +123,7 @@ describe('the CMS config', () => {
   // this writer emits bare scalars; a value YAML would read as something else has to stop
   // the build rather than reach the client as a broken panel
   test('refuses a value that would need quoting rather than emitting it bare', () => {
-    expect(() => adminConfigYaml({ ...SITE, collectionLabel: '# Textos' })).toThrow('needs YAML quoting')
+    expect(() => adminConfigYaml({ ...SITE, fileLabel: '# Textos' })).toThrow('needs YAML quoting')
     expect(() => adminConfigYaml({ ...SITE, mediaFolder: 'no' })).toThrow('needs YAML quoting')
   })
 })
