@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/espadat-studio/self-serve-copy/compare/v0.3.0...v0.4.0) (2026-10-06)
+
+
+### Features
+
+* seed the content repository from the site's own copy ([#7](https://github.com/espadat-studio/self-serve-copy/issues/7)) ([9fd67ef](https://github.com/espadat-studio/self-serve-copy/commit/9fd67efc9e6b504fab01ca3953d05cdc2c8c405f))
+
 ## [0.3.0](https://github.com/espadat-studio/self-serve-copy/compare/v0.2.0...v0.3.0) (2026-10-06)
 
 
