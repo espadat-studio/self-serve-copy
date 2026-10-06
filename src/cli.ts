@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util'
 import { fetchCopy, postStatus } from './bridge'
 import { detectDrift, renderDriftReport } from './drift'
 import { mergeFenced } from './merge'
+import { seedContentRepo } from './seed'
 import type { SiteCopy } from './site'
 
 const USAGE = `usage: self-serve-copy <command> --config <module>
@@ -13,7 +14,8 @@ const USAGE = `usage: self-serve-copy <command> --config <module>
   fetch  --out <file>       read the client's copy off the forge
   merge  <incoming.json>    apply it to the target file, fence first
   status --sha <commit>     mark the client's commit as publishing
-  drift  --out <file>       report the locales whose base copy has moved`
+  drift  --out <file>       report the locales whose base copy has moved
+  seed                      create the content file and media folder on the forge, if absent`
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -50,7 +52,7 @@ function emitStepOutputs(outputs: Record<string, string>): void {
   appendFileSync(file, `${Object.entries(outputs).map(([key, value]) => `${key}=${value}`).join('\n')}\n`)
 }
 
-const COMMANDS = ['fetch', 'merge', 'status', 'drift'] as const
+const COMMANDS = ['fetch', 'merge', 'status', 'drift', 'seed'] as const
 
 type Command = (typeof COMMANDS)[number]
 
@@ -102,6 +104,12 @@ async function main(): Promise<void> {
       writeFileSync(required(values.out, '--out'), `${renderDriftReport(site.fields, stale, site.drift)}\n`)
       // the count is the command's only stdout, so a caller can open and close on it
       console.log(stale.length)
+      return
+    }
+
+    case 'seed': {
+      const { created, kept } = await seedContentRepo(site, token(), readFileSync(site.targetFile, 'utf8'))
+      console.log(`created: ${created.join(' ') || 'nothing'}\nkept, already there: ${kept.join(' ') || 'nothing'}`)
       return
     }
   }

@@ -112,9 +112,10 @@ self-serve-copy fetch  --config <module> --out <file>   read the client's copy o
 self-serve-copy merge  --config <module> <incoming>     apply it to the target file, fence first
 self-serve-copy status --config <module> --sha <commit> mark the client's commit as publishing
 self-serve-copy drift  --config <module> --out <file>   report the locales whose base copy has moved
+self-serve-copy seed   --config <module>                create the content file and media folder on the forge, if absent
 ```
 
-`fetch` and `status` read `FORGEJO_TOKEN`. `fetch` appends `fetched` and `sha` to `$GITHUB_OUTPUT`, so the caller's later steps gate on `steps.<id>.outputs.fetched` with no shell of their own.
+`fetch`, `status` and `seed` read `FORGEJO_TOKEN`. `fetch` appends `fetched` and `sha` to `$GITHUB_OUTPUT`, so the caller's later steps gate on `steps.<id>.outputs.fetched` with no shell of their own.
 
 A forge that is unreachable, rate-limited or 5xx leaves `fetched` unset and exits 0: the poll is the retry, and the next tick picks the edit up. Anything else — a redirect, an auth failure, a missing file — is a misconfiguration and fails loudly.
 
@@ -126,6 +127,11 @@ A forge that is unreachable, rate-limited or 5xx leaves `fetched` unset and exit
 | --- | --- |
 | `FORGEJO_TOKEN` | `fetch` and `status` |
 | `APP_ID`, `APP_PRIVATE_KEY` | the app token the bridge pushes with |
+
+Then, once per site, before the client gets the panel's address:
+
+- **Seed the content repository** with `self-serve-copy seed`. The onboarding script leaves it holding only a README. Decap then opens an empty draft, every field `required`, and fails to load any entry with `sha not found [<branch>:<mediaFolder>]`: Forgejo answers a tree read of an absent folder with that error rather than the 404 Decap handles. `seed` writes the flat content file in Decap's key order and the media folder's `.gitkeep`, and never overwrites. The site's `FORGEJO_TOKEN`, scoped `write:repository` to the content repository, is enough.
+- **Allow the site's origin through the forge's CORS** (`forgejo_cors_allow_origins` in auberge). Decap exchanges the OAuth code from the site's own origin, so a missing origin logs in at the forge and then fails the token exchange with a CORS error.
 
 ## Renovate
 
