@@ -1,6 +1,35 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "group:all",
-    "schedule:weekly", "helpers:pinGitHubActionDigests"],
-  "semanticCommits": "enabled"
+  "extends": [
+    "config:recommended",
+    "schedule:weekly",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "semanticCommits": "enabled",
+  "packageRules": [
+    {
+      "description": "Everything that never reaches the release: devDependencies and GitHub Actions. One weekly PR typed chore, which the release tool ignores, so merging it cuts no release.",
+      "matchPackageNames": [
+        "*"
+      ],
+      "groupName": "tooling dependencies",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps"
+    },
+    {
+      "description": "Root npm dependencies ship in the published package, so a bump only reaches users through a release: release-please cuts one for fix. Own weekly PR, so a tooling bump never rides along. devDependencies, the docs site and GitHub Actions stay chore.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchDepTypes": [
+        "dependencies"
+      ],
+      "matchFileNames": [
+        "package.json"
+      ],
+      "groupName": "runtime dependencies",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "deps"
+    }
+  ]
 }
